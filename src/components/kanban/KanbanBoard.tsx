@@ -10,7 +10,7 @@ import {
   DragEndEvent,
   DragOverEvent,
 } from '@dnd-kit/core';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { KanbanColumn } from './KanbanColumn';
 import { useKanban } from '@/hooks/useKanban';
 import { Task, ColumnId, Column } from '@/types/kanban';
@@ -23,33 +23,40 @@ const columns: Column[] = [
   { id: 'done', title: 'Done', color: 'column-done' },
 ];
 
+const priorityColors: Record<string, string> = {
+  low: 'bg-column-done/20 text-column-done',
+  medium: 'bg-column-todo/20 text-column-todo',
+  high: 'bg-destructive/20 text-destructive',
+};
+
 export function KanbanBoard() {
   const { tasks, addTask, moveTask, deleteTask, getTasksByColumn } = useKanban();
   const [activeTask, setActiveTask] = useState<Task | null>(null);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 5,
-      },
-    }),
-    useSensor(TouchSensor, {
-      activationConstraint: {
-        delay: 250,
-        tolerance: 5,
-      },
-    })
-  );
+  const pointerSensor = useSensor(PointerSensor, {
+    activationConstraint: {
+      distance: 5,
+    },
+  });
 
-  const handleDragStart = (event: DragStartEvent) => {
+  const touchSensor = useSensor(TouchSensor, {
+    activationConstraint: {
+      delay: 250,
+      tolerance: 5,
+    },
+  });
+
+  const sensors = useSensors(pointerSensor, touchSensor);
+
+  const handleDragStart = useCallback((event: DragStartEvent) => {
     const { active } = event;
     const task = tasks.find((t) => t.id === active.id);
     if (task) {
       setActiveTask(task);
     }
-  };
+  }, [tasks]);
 
-  const handleDragOver = (event: DragOverEvent) => {
+  const handleDragOver = useCallback((event: DragOverEvent) => {
     const { active, over } = event;
     if (!over) return;
 
@@ -72,17 +79,11 @@ export function KanbanBoard() {
     if (overTask && activeTaskData.columnId !== overTask.columnId) {
       moveTask(activeTaskId, overTask.columnId);
     }
-  };
+  }, [tasks, moveTask]);
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = useCallback(() => {
     setActiveTask(null);
-  };
-
-  const priorityColors = {
-    low: 'bg-column-done/20 text-column-done',
-    medium: 'bg-column-todo/20 text-column-todo',
-    high: 'bg-destructive/20 text-destructive',
-  };
+  }, []);
 
   return (
     <DndContext
