@@ -13,15 +13,9 @@ import {
 import { useState, useCallback } from 'react';
 import { KanbanColumn } from './KanbanColumn';
 import { useKanban } from '@/hooks/useKanban';
-import { Task, ColumnId, Column } from '@/types/kanban';
-import { GripVertical } from 'lucide-react';
+import { Task, ColumnId } from '@/types/kanban';
+import { GripVertical, Plus, X, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-const columns: Column[] = [
-  { id: 'todo', title: 'To Do', color: 'column-todo' },
-  { id: 'in-progress', title: 'In Progress', color: 'column-progress' },
-  { id: 'done', title: 'Done', color: 'column-done' },
-];
 
 const priorityColors: Record<string, string> = {
   low: 'bg-column-done/20 text-column-done',
@@ -30,8 +24,10 @@ const priorityColors: Record<string, string> = {
 };
 
 export function KanbanBoard() {
-  const { tasks, addTask, moveTask, deleteTask, updateTask, getTasksByColumn } = useKanban();
+  const { tasks, columns, addTask, moveTask, deleteTask, updateTask, getTasksByColumn, addColumn, updateColumn, deleteColumn } = useKanban();
   const [activeTask, setActiveTask] = useState<Task | null>(null);
+  const [isAddingColumn, setIsAddingColumn] = useState(false);
+  const [newColumnTitle, setNewColumnTitle] = useState('');
 
   const pointerSensor = useSensor(PointerSensor, {
     activationConstraint: {
@@ -79,11 +75,28 @@ export function KanbanBoard() {
     if (overTask && activeTaskData.columnId !== overTask.columnId) {
       moveTask(activeTaskId, overTask.columnId);
     }
-  }, [tasks, moveTask]);
+  }, [tasks, columns, moveTask]);
 
   const handleDragEnd = useCallback(() => {
     setActiveTask(null);
   }, []);
+
+  const handleAddColumn = () => {
+    if (newColumnTitle.trim()) {
+      addColumn(newColumnTitle.trim());
+      setNewColumnTitle('');
+      setIsAddingColumn(false);
+    }
+  };
+
+  const handleColumnKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleAddColumn();
+    } else if (e.key === 'Escape') {
+      setIsAddingColumn(false);
+      setNewColumnTitle('');
+    }
+  };
 
   return (
     <DndContext
@@ -93,18 +106,62 @@ export function KanbanBoard() {
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="flex gap-6 overflow-x-auto pb-4">
         {columns.map((column) => (
-          <KanbanColumn
-            key={column.id}
-            id={column.id}
-            title={column.title}
-            tasks={getTasksByColumn(column.id)}
-            onAddTask={addTask}
-            onDeleteTask={deleteTask}
-            onUpdateTask={updateTask}
-          />
+          <div key={column.id} className="min-w-[320px] flex-shrink-0">
+            <KanbanColumn
+              id={column.id}
+              title={column.title}
+              tasks={getTasksByColumn(column.id)}
+              onAddTask={addTask}
+              onDeleteTask={deleteTask}
+              onUpdateTask={updateTask}
+              onUpdateColumn={updateColumn}
+              onDeleteColumn={deleteColumn}
+            />
+          </div>
         ))}
+
+        {/* Add Column Button */}
+        {isAddingColumn ? (
+          <div className="min-w-[320px] flex-shrink-0 kanban-column animate-scale-in">
+            <input
+              type="text"
+              value={newColumnTitle}
+              onChange={(e) => setNewColumnTitle(e.target.value)}
+              onKeyDown={handleColumnKeyDown}
+              placeholder="Column title..."
+              className="w-full px-3 py-2 rounded-lg border border-input bg-card text-card-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              autoFocus
+            />
+            <div className="flex gap-2 mt-3">
+              <button
+                onClick={handleAddColumn}
+                className="flex-1 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
+              >
+                <Check className="h-4 w-4" />
+                Add
+              </button>
+              <button
+                onClick={() => {
+                  setIsAddingColumn(false);
+                  setNewColumnTitle('');
+                }}
+                className="px-4 py-2 bg-secondary text-secondary-foreground rounded-lg font-medium hover:bg-secondary/80 transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            onClick={() => setIsAddingColumn(true)}
+            className="min-w-[320px] flex-shrink-0 h-fit p-4 rounded-xl border-2 border-dashed border-border hover:border-primary/50 hover:bg-primary/5 transition-all flex items-center justify-center gap-2 text-muted-foreground hover:text-primary"
+          >
+            <Plus className="h-5 w-5" />
+            Add Column
+          </button>
+        )}
       </div>
 
       <DragOverlay>

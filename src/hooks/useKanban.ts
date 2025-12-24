@@ -1,5 +1,11 @@
 import { useState, useCallback } from 'react';
-import { Task, ColumnId } from '@/types/kanban';
+import { Task, ColumnId, Column } from '@/types/kanban';
+
+const initialColumns: Column[] = [
+  { id: 'todo', title: 'To Do', color: 'column-todo' },
+  { id: 'in-progress', title: 'In Progress', color: 'column-progress' },
+  { id: 'done', title: 'Done', color: 'column-done' },
+];
 
 const initialTasks: Task[] = [
   {
@@ -46,6 +52,7 @@ const initialTasks: Task[] = [
 
 export function useKanban() {
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
+  const [columns, setColumns] = useState<Column[]>(initialColumns);
 
   const addTask = useCallback((title: string, columnId: ColumnId) => {
     const newTask: Task = {
@@ -82,12 +89,42 @@ export function useKanban() {
     [tasks]
   );
 
+  // Column management
+  const addColumn = useCallback((title: string) => {
+    const id = crypto.randomUUID() as ColumnId;
+    const colors = ['column-todo', 'column-progress', 'column-done'];
+    const newColumn: Column = {
+      id,
+      title,
+      color: colors[columns.length % colors.length],
+    };
+    setColumns((prev) => [...prev, newColumn]);
+  }, [columns.length]);
+
+  const updateColumn = useCallback((columnId: ColumnId, title: string) => {
+    setColumns((prev) =>
+      prev.map((col) =>
+        col.id === columnId ? { ...col, title } : col
+      )
+    );
+  }, []);
+
+  const deleteColumn = useCallback((columnId: ColumnId) => {
+    setColumns((prev) => prev.filter((col) => col.id !== columnId));
+    // Also delete all tasks in this column
+    setTasks((prev) => prev.filter((task) => task.columnId !== columnId));
+  }, []);
+
   return {
     tasks,
+    columns,
     addTask,
     moveTask,
     deleteTask,
     updateTask,
     getTasksByColumn,
+    addColumn,
+    updateColumn,
+    deleteColumn,
   };
 }
