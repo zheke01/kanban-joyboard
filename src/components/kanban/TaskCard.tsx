@@ -1,18 +1,23 @@
-import { forwardRef } from 'react';
+import { forwardRef, useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Task } from '@/types/kanban';
-import { GripVertical, Trash2 } from 'lucide-react';
+import { GripVertical, Trash2, Check, X, Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface TaskCardProps {
   task: Task;
   onDelete: (id: string) => void;
+  onUpdate: (id: string, updates: { title?: string; description?: string }) => void;
   isDragging?: boolean;
 }
 
 export const TaskCard = forwardRef<HTMLDivElement, TaskCardProps>(
-  ({ task, onDelete, isDragging: externalDragging }, ref) => {
+  ({ task, onDelete, onUpdate, isDragging: externalDragging }, ref) => {
+    const [isEditing, setIsEditing] = useState(false);
+    const [editTitle, setEditTitle] = useState(task.title);
+    const [editDescription, setEditDescription] = useState(task.description || '');
+
     const {
       attributes,
       listeners,
@@ -34,6 +39,75 @@ export const TaskCard = forwardRef<HTMLDivElement, TaskCardProps>(
     };
 
     const dragging = isDragging || externalDragging;
+
+    const handleSave = () => {
+      if (editTitle.trim()) {
+        onUpdate(task.id, { 
+          title: editTitle.trim(), 
+          description: editDescription.trim() || undefined 
+        });
+        setIsEditing(false);
+      }
+    };
+
+    const handleCancel = () => {
+      setEditTitle(task.title);
+      setEditDescription(task.description || '');
+      setIsEditing(false);
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        handleSave();
+      } else if (e.key === 'Escape') {
+        handleCancel();
+      }
+    };
+
+    if (isEditing) {
+      return (
+        <div
+          ref={setNodeRef}
+          style={style}
+          className="kanban-card animate-fade-in"
+        >
+          <div className="space-y-2">
+            <input
+              type="text"
+              value={editTitle}
+              onChange={(e) => setEditTitle(e.target.value)}
+              onKeyDown={handleKeyDown}
+              className="w-full bg-background border border-border rounded px-2 py-1 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
+              placeholder="Task title"
+              autoFocus
+            />
+            <textarea
+              value={editDescription}
+              onChange={(e) => setEditDescription(e.target.value)}
+              onKeyDown={handleKeyDown}
+              className="w-full bg-background border border-border rounded px-2 py-1 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+              placeholder="Description (optional)"
+              rows={2}
+            />
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={handleCancel}
+                className="p-1 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+              <button
+                onClick={handleSave}
+                className="p-1 text-primary hover:text-primary/80 transition-colors"
+              >
+                <Check className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
 
     return (
       <div
@@ -74,12 +148,20 @@ export const TaskCard = forwardRef<HTMLDivElement, TaskCardProps>(
             )}
           </div>
 
-          <button
-            onClick={() => onDelete(task.id)}
-            className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
+          <div className="flex gap-1">
+            <button
+              onClick={() => setIsEditing(true)}
+              className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-primary transition-all"
+            >
+              <Pencil className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => onDelete(task.id)}
+              className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       </div>
     );

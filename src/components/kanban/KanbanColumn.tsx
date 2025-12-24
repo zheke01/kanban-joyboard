@@ -12,6 +12,7 @@ interface KanbanColumnProps {
   tasks: Task[];
   onAddTask: (title: string, columnId: ColumnId) => void;
   onDeleteTask: (id: string) => void;
+  onUpdateTask: (id: string, updates: { title?: string; description?: string }) => void;
 }
 
 export function KanbanColumn({
@@ -20,6 +21,7 @@ export function KanbanColumn({
   tasks,
   onAddTask,
   onDeleteTask,
+  onUpdateTask,
 }: KanbanColumnProps) {
   const [isAdding, setIsAdding] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
@@ -68,7 +70,7 @@ export function KanbanColumn({
       <SortableContext items={tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
         <div className="flex flex-col gap-3 flex-1">
           {tasks.map((task) => (
-            <TaskCard key={task.id} task={task} onDelete={onDeleteTask} />
+            <TaskCard key={task.id} task={task} onDelete={onDeleteTask} onUpdate={onUpdateTask} />
           ))}
         </div>
       </SortableContext>
