@@ -2,7 +2,7 @@ import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { Task, ColumnId } from '@/types/kanban';
 import { TaskCard } from './TaskCard';
-import { Plus } from 'lucide-react';
+import { Plus, Pencil, Trash2, Check, X } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 
@@ -13,6 +13,8 @@ interface KanbanColumnProps {
   onAddTask: (title: string, columnId: ColumnId) => void;
   onDeleteTask: (id: string) => void;
   onUpdateTask: (id: string, updates: { title?: string; description?: string }) => void;
+  onUpdateColumn: (columnId: ColumnId, title: string) => void;
+  onDeleteColumn: (columnId: ColumnId) => void;
 }
 
 export function KanbanColumn({
@@ -22,9 +24,13 @@ export function KanbanColumn({
   onAddTask,
   onDeleteTask,
   onUpdateTask,
+  onUpdateColumn,
+  onDeleteColumn,
 }: KanbanColumnProps) {
   const [isAdding, setIsAdding] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editedTitle, setEditedTitle] = useState(title);
 
   const { setNodeRef, isOver } = useDroppable({ id });
 
@@ -45,6 +51,22 @@ export function KanbanColumn({
     }
   };
 
+  const handleSaveTitle = () => {
+    if (editedTitle.trim()) {
+      onUpdateColumn(id, editedTitle.trim());
+      setIsEditingTitle(false);
+    }
+  };
+
+  const handleTitleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSaveTitle();
+    } else if (e.key === 'Escape') {
+      setEditedTitle(title);
+      setIsEditingTitle(false);
+    }
+  };
+
   const badgeClass = {
     'todo': 'column-badge-todo',
     'in-progress': 'column-badge-progress',
@@ -59,12 +81,54 @@ export function KanbanColumn({
         isOver && 'bg-primary/5 ring-2 ring-primary/20'
       )}
     >
-      <div className="column-header">
-        <div className={cn('column-badge', badgeClass[id])} />
-        <h2 className="font-semibold text-foreground">{title}</h2>
-        <span className="ml-auto text-sm text-muted-foreground bg-background/80 px-2 py-0.5 rounded-full">
-          {tasks.length}
-        </span>
+      <div className="column-header group">
+        <div className={cn('column-badge', badgeClass[id as keyof typeof badgeClass] || 'column-badge-todo')} />
+        
+        {isEditingTitle ? (
+          <div className="flex items-center gap-2 flex-1">
+            <input
+              type="text"
+              value={editedTitle}
+              onChange={(e) => setEditedTitle(e.target.value)}
+              onKeyDown={handleTitleKeyDown}
+              className="flex-1 bg-background border border-border rounded px-2 py-1 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary"
+              autoFocus
+            />
+            <button
+              onClick={() => { setEditedTitle(title); setIsEditingTitle(false); }}
+              className="p-1 text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
+            <button
+              onClick={handleSaveTitle}
+              className="p-1 text-primary hover:text-primary/80"
+            >
+              <Check className="h-4 w-4" />
+            </button>
+          </div>
+        ) : (
+          <>
+            <h2 className="font-semibold text-foreground">{title}</h2>
+            <div className="ml-auto flex items-center gap-2">
+              <span className="text-sm text-muted-foreground bg-background/80 px-2 py-0.5 rounded-full">
+                {tasks.length}
+              </span>
+              <button
+                onClick={() => setIsEditingTitle(true)}
+                className="opacity-0 group-hover:opacity-100 p-1 text-muted-foreground hover:text-primary transition-all"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </button>
+              <button
+                onClick={() => onDeleteColumn(id)}
+                className="opacity-0 group-hover:opacity-100 p-1 text-muted-foreground hover:text-destructive transition-all"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </>
+        )}
       </div>
 
       <SortableContext items={tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
