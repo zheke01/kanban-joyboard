@@ -30,7 +30,7 @@ const priorityColors: Record<string, string> = {
 };
 
 export function KanbanBoard() {
-  const { tasks, addTask, moveTask, deleteTask, getTasksByColumn } = useKanban();
+  const { tasks, addTask, moveTask, deleteTask, updateTask, getTasksByColumn } = useKanban();
   const [activeTask, setActiveTask] = useState<Task | null>(null);
 
   const pointerSensor = useSensor(PointerSensor, {
@@ -102,6 +102,7 @@ export function KanbanBoard() {
             tasks={getTasksByColumn(column.id)}
             onAddTask={addTask}
             onDeleteTask={deleteTask}
+            onUpdateTask={updateTask}
           />
         ))}
       </div>

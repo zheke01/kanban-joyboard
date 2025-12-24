@@ -69,6 +69,14 @@ export function useKanban() {
     setTasks((prev) => prev.filter((task) => task.id !== taskId));
   }, []);
 
+  const updateTask = useCallback((taskId: string, updates: Partial<Pick<Task, 'title' | 'description'>>) => {
+    setTasks((prev) =>
+      prev.map((task) =>
+        task.id === taskId ? { ...task, ...updates } : task
+      )
+    );
+  }, []);
+
   const getTasksByColumn = useCallback(
     (columnId: ColumnId) => tasks.filter((task) => task.columnId === columnId),
     [tasks]
@@ -79,6 +87,7 @@ export function useKanban() {
     addTask,
     moveTask,
     deleteTask,
+    updateTask,
     getTasksByColumn,
   };
 }
