@@ -2,9 +2,9 @@ import { useState, useCallback } from 'react';
 import { Task, ColumnId, Column, ColumnColor } from '@/types/kanban';
 
 const initialColumns: Column[] = [
-  { id: 'todo', title: 'To Do', color: 'yellow' },
-  { id: 'in-progress', title: 'In Progress', color: 'blue' },
-  { id: 'done', title: 'Done', color: 'green' },
+  { id: 'todo', title: 'To Do', color: '#EAB308' },
+  { id: 'in-progress', title: 'In Progress', color: '#3B82F6' },
+  { id: 'done', title: 'Done', color: '#22C55E' },
 ];
 
 const initialTasks: Task[] = [
@@ -90,7 +90,7 @@ export function useKanban() {
   );
 
   // Column management
-  const addColumn = useCallback((title: string, color: ColumnColor = 'blue') => {
+  const addColumn = useCallback((title: string, color: ColumnColor = '#3B82F6') => {
     const id = crypto.randomUUID() as ColumnId;
     const newColumn: Column = {
       id,
@@ -114,6 +114,21 @@ export function useKanban() {
     setTasks((prev) => prev.filter((task) => task.columnId !== columnId));
   }, []);
 
+  const reorderColumns = useCallback((activeId: string, overId: string) => {
+    setColumns((prev) => {
+      const oldIndex = prev.findIndex((col) => col.id === activeId);
+      const newIndex = prev.findIndex((col) => col.id === overId);
+      
+      if (oldIndex === -1 || newIndex === -1) return prev;
+      
+      const newColumns = [...prev];
+      const [movedColumn] = newColumns.splice(oldIndex, 1);
+      newColumns.splice(newIndex, 0, movedColumn);
+      
+      return newColumns;
+    });
+  }, []);
+
   return {
     tasks,
     columns,
@@ -125,5 +140,6 @@ export function useKanban() {
     addColumn,
     updateColumn,
     deleteColumn,
+    reorderColumns,
   };
 }
