@@ -1,10 +1,10 @@
 import { useState, useCallback } from 'react';
-import { Task, ColumnId, Column } from '@/types/kanban';
+import { Task, ColumnId, Column, ColumnColor } from '@/types/kanban';
 
 const initialColumns: Column[] = [
-  { id: 'todo', title: 'To Do', color: 'column-todo' },
-  { id: 'in-progress', title: 'In Progress', color: 'column-progress' },
-  { id: 'done', title: 'Done', color: 'column-done' },
+  { id: 'todo', title: 'To Do', color: 'yellow' },
+  { id: 'in-progress', title: 'In Progress', color: 'blue' },
+  { id: 'done', title: 'Done', color: 'green' },
 ];
 
 const initialTasks: Task[] = [
@@ -90,21 +90,20 @@ export function useKanban() {
   );
 
   // Column management
-  const addColumn = useCallback((title: string) => {
+  const addColumn = useCallback((title: string, color: ColumnColor = 'blue') => {
     const id = crypto.randomUUID() as ColumnId;
-    const colors = ['column-todo', 'column-progress', 'column-done'];
     const newColumn: Column = {
       id,
       title,
-      color: colors[columns.length % colors.length],
+      color,
     };
     setColumns((prev) => [...prev, newColumn]);
-  }, [columns.length]);
+  }, []);
 
-  const updateColumn = useCallback((columnId: ColumnId, title: string) => {
+  const updateColumn = useCallback((columnId: ColumnId, updates: Partial<Pick<Column, 'title' | 'color'>>) => {
     setColumns((prev) =>
       prev.map((col) =>
-        col.id === columnId ? { ...col, title } : col
+        col.id === columnId ? { ...col, ...updates } : col
       )
     );
   }, []);

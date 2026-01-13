@@ -1,7 +1,8 @@
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { Task, ColumnId } from '@/types/kanban';
+import { Task, ColumnId, ColumnColor, COLUMN_COLORS } from '@/types/kanban';
 import { TaskCard } from './TaskCard';
+import { ColorPicker } from './ColorPicker';
 import { Plus, Pencil, Trash2, Check, X } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -9,17 +10,19 @@ import { cn } from '@/lib/utils';
 interface KanbanColumnProps {
   id: ColumnId;
   title: string;
+  color: ColumnColor;
   tasks: Task[];
   onAddTask: (title: string, columnId: ColumnId) => void;
   onDeleteTask: (id: string) => void;
   onUpdateTask: (id: string, updates: { title?: string; description?: string }) => void;
-  onUpdateColumn: (columnId: ColumnId, title: string) => void;
+  onUpdateColumn: (columnId: ColumnId, updates: { title?: string; color?: ColumnColor }) => void;
   onDeleteColumn: (columnId: ColumnId) => void;
 }
 
 export function KanbanColumn({
   id,
   title,
+  color,
   tasks,
   onAddTask,
   onDeleteTask,
@@ -53,7 +56,7 @@ export function KanbanColumn({
 
   const handleSaveTitle = () => {
     if (editedTitle.trim()) {
-      onUpdateColumn(id, editedTitle.trim());
+      onUpdateColumn(id, { title: editedTitle.trim() });
       setIsEditingTitle(false);
     }
   };
@@ -67,11 +70,11 @@ export function KanbanColumn({
     }
   };
 
-  const badgeClass = {
-    'todo': 'column-badge-todo',
-    'in-progress': 'column-badge-progress',
-    'done': 'column-badge-done',
+  const handleColorChange = (newColor: ColumnColor) => {
+    onUpdateColumn(id, { color: newColor });
   };
+
+  const colorData = COLUMN_COLORS.find((c) => c.value === color) || COLUMN_COLORS[0];
 
   return (
     <div
@@ -82,7 +85,10 @@ export function KanbanColumn({
       )}
     >
       <div className="column-header group">
-        <div className={cn('column-badge', badgeClass[id as keyof typeof badgeClass] || 'column-badge-todo')} />
+        <div
+          className="column-badge"
+          style={{ backgroundColor: `hsl(${colorData.hsl})` }}
+        />
         
         {isEditingTitle ? (
           <div className="flex items-center gap-2 flex-1">
@@ -110,10 +116,15 @@ export function KanbanColumn({
         ) : (
           <>
             <h2 className="font-semibold text-foreground">{title}</h2>
-            <div className="ml-auto flex items-center gap-2">
+            <div className="ml-auto flex items-center gap-1">
               <span className="text-sm text-muted-foreground bg-background/80 px-2 py-0.5 rounded-full">
                 {tasks.length}
               </span>
+              <ColorPicker
+                value={color}
+                onChange={handleColorChange}
+                className="opacity-0 group-hover:opacity-100 transition-opacity"
+              />
               <button
                 onClick={() => setIsEditingTitle(true)}
                 className="opacity-0 group-hover:opacity-100 p-1 text-muted-foreground hover:text-primary transition-all"
