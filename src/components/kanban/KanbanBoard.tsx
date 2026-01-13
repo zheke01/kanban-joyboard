@@ -13,8 +13,8 @@ import {
 import { useState, useCallback } from 'react';
 import { KanbanColumn } from './KanbanColumn';
 import { useKanban } from '@/hooks/useKanban';
-import { Task, ColumnId } from '@/types/kanban';
-import { GripVertical, Plus, X, Check } from 'lucide-react';
+import { Task, ColumnId, ColumnColor, COLUMN_COLORS } from '@/types/kanban';
+import { Plus, X, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const priorityColors: Record<string, string> = {
@@ -28,6 +28,7 @@ export function KanbanBoard() {
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [isAddingColumn, setIsAddingColumn] = useState(false);
   const [newColumnTitle, setNewColumnTitle] = useState('');
+  const [newColumnColor, setNewColumnColor] = useState<ColumnColor>('blue');
 
   const pointerSensor = useSensor(PointerSensor, {
     activationConstraint: {
@@ -83,8 +84,9 @@ export function KanbanBoard() {
 
   const handleAddColumn = () => {
     if (newColumnTitle.trim()) {
-      addColumn(newColumnTitle.trim());
+      addColumn(newColumnTitle.trim(), newColumnColor);
       setNewColumnTitle('');
+      setNewColumnColor('blue');
       setIsAddingColumn(false);
     }
   };
@@ -95,6 +97,7 @@ export function KanbanBoard() {
     } else if (e.key === 'Escape') {
       setIsAddingColumn(false);
       setNewColumnTitle('');
+      setNewColumnColor('blue');
     }
   };
 
@@ -112,6 +115,7 @@ export function KanbanBoard() {
             <KanbanColumn
               id={column.id}
               title={column.title}
+              color={column.color}
               tasks={getTasksByColumn(column.id)}
               onAddTask={addTask}
               onDeleteTask={deleteTask}
@@ -134,7 +138,27 @@ export function KanbanBoard() {
               className="w-full px-3 py-2 rounded-lg border border-input bg-card text-card-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               autoFocus
             />
-            <div className="flex gap-2 mt-3">
+            
+            {/* Color Selection */}
+            <div className="mt-3">
+              <p className="text-sm text-muted-foreground mb-2">Choose a color:</p>
+              <div className="flex gap-2 flex-wrap">
+                {COLUMN_COLORS.map((color) => (
+                  <button
+                    key={color.value}
+                    onClick={() => setNewColumnColor(color.value)}
+                    className={cn(
+                      'w-7 h-7 rounded-full transition-transform hover:scale-110 ring-offset-2 ring-offset-secondary',
+                      newColumnColor === color.value && 'ring-2 ring-primary'
+                    )}
+                    style={{ backgroundColor: `hsl(${color.hsl})` }}
+                    title={color.label}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div className="flex gap-2 mt-4">
               <button
                 onClick={handleAddColumn}
                 className="flex-1 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
@@ -146,6 +170,7 @@ export function KanbanBoard() {
                 onClick={() => {
                   setIsAddingColumn(false);
                   setNewColumnTitle('');
+                  setNewColumnColor('blue');
                 }}
                 className="px-4 py-2 bg-secondary text-secondary-foreground rounded-lg font-medium hover:bg-secondary/80 transition-colors"
               >
@@ -168,9 +193,6 @@ export function KanbanBoard() {
         {activeTask ? (
           <div className="kanban-card kanban-card-dragging">
             <div className="flex items-start gap-3">
-              <div className="mt-1 text-muted-foreground/50">
-                <GripVertical className="h-4 w-4" />
-              </div>
               <div className="flex-1 min-w-0">
                 <h3 className="font-medium text-card-foreground leading-tight">
                   {activeTask.title}

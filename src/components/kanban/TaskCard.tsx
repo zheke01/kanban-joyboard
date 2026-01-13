@@ -2,7 +2,7 @@ import { forwardRef, useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Task } from '@/types/kanban';
-import { GripVertical, Trash2, Check, X, Pencil } from 'lucide-react';
+import { Trash2, Check, X, Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface TaskCardProps {
@@ -113,20 +113,14 @@ export const TaskCard = forwardRef<HTMLDivElement, TaskCardProps>(
       <div
         ref={setNodeRef}
         style={style}
+        {...attributes}
+        {...listeners}
         className={cn(
-          'kanban-card group animate-fade-in',
+          'kanban-card group animate-fade-in touch-none',
           dragging && 'kanban-card-dragging'
         )}
       >
         <div className="flex items-start gap-3">
-          <button
-            {...attributes}
-            {...listeners}
-            className="mt-1 text-muted-foreground/50 hover:text-muted-foreground transition-colors cursor-grab active:cursor-grabbing touch-none"
-          >
-            <GripVertical className="h-4 w-4" />
-          </button>
-
           <div className="flex-1 min-w-0">
             <h3 className="font-medium text-card-foreground leading-tight">
               {task.title}
@@ -148,7 +142,7 @@ export const TaskCard = forwardRef<HTMLDivElement, TaskCardProps>(
             )}
           </div>
 
-          <div className="flex gap-1">
+          <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
             <button
               onClick={() => setIsEditing(true)}
               className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-primary transition-all"
