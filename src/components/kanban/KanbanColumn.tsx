@@ -1,9 +1,11 @@
 import { useDroppable } from '@dnd-kit/core';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { Task, ColumnId, ColumnColor, COLUMN_COLORS } from '@/types/kanban';
+import { Task, ColumnId, ColumnColor } from '@/types/kanban';
 import { TaskCard } from './TaskCard';
-import { ColorPicker } from './ColorPicker';
-import { Plus, Pencil, Trash2, Check, X } from 'lucide-react';
+import { AdvancedColorPicker } from './AdvancedColorPicker';
+import { Plus, Pencil, Trash2, Check, X, GripVertical } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 
@@ -35,7 +37,23 @@ export function KanbanColumn({
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editedTitle, setEditedTitle] = useState(title);
 
-  const { setNodeRef, isOver } = useDroppable({ id });
+  // Droppable for tasks
+  const { setNodeRef: setDroppableRef, isOver } = useDroppable({ id });
+
+  // Sortable for column reordering
+  const {
+    attributes,
+    listeners,
+    setNodeRef: setSortableRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id, data: { type: 'column' } });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
 
   const handleAddTask = () => {
     if (newTaskTitle.trim()) {
@@ -74,125 +92,137 @@ export function KanbanColumn({
     onUpdateColumn(id, { color: newColor });
   };
 
-  const colorData = COLUMN_COLORS.find((c) => c.value === color) || COLUMN_COLORS[0];
-
   return (
     <div
-      ref={setNodeRef}
+      ref={setSortableRef}
+      style={style}
       className={cn(
         'kanban-column transition-colors duration-200',
+        isDragging && 'opacity-50',
         isOver && 'bg-primary/5 ring-2 ring-primary/20'
       )}
     >
-      <div className="column-header group">
-        <div
-          className="column-badge"
-          style={{ backgroundColor: `hsl(${colorData.hsl})` }}
-        />
-        
-        {isEditingTitle ? (
-          <div className="flex items-center gap-2 flex-1">
-            <input
-              type="text"
-              value={editedTitle}
-              onChange={(e) => setEditedTitle(e.target.value)}
-              onKeyDown={handleTitleKeyDown}
-              className="flex-1 bg-background border border-border rounded px-2 py-1 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary"
-              autoFocus
-            />
-            <button
-              onClick={() => { setEditedTitle(title); setIsEditingTitle(false); }}
-              className="p-1 text-muted-foreground hover:text-foreground"
-            >
-              <X className="h-4 w-4" />
-            </button>
-            <button
-              onClick={handleSaveTitle}
-              className="p-1 text-primary hover:text-primary/80"
-            >
-              <Check className="h-4 w-4" />
-            </button>
-          </div>
-        ) : (
-          <>
-            <h2 className="font-semibold text-foreground">{title}</h2>
-            <div className="ml-auto flex items-center gap-1">
-              <span className="text-sm text-muted-foreground bg-background/80 px-2 py-0.5 rounded-full">
-                {tasks.length}
-              </span>
-              <ColorPicker
-                value={color}
-                onChange={handleColorChange}
-                className="opacity-0 group-hover:opacity-100 transition-opacity"
+      <div ref={setDroppableRef} className="flex flex-col h-full">
+        <div className="column-header group">
+          {/* Drag Handle */}
+          <button
+            {...attributes}
+            {...listeners}
+            className="p-1 -ml-1 text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing transition-colors"
+            title="Drag to reorder"
+          >
+            <GripVertical className="h-4 w-4" />
+          </button>
+
+          <div
+            className="column-badge"
+            style={{ backgroundColor: color }}
+          />
+          
+          {isEditingTitle ? (
+            <div className="flex items-center gap-2 flex-1">
+              <input
+                type="text"
+                value={editedTitle}
+                onChange={(e) => setEditedTitle(e.target.value)}
+                onKeyDown={handleTitleKeyDown}
+                className="flex-1 bg-background border border-border rounded px-2 py-1 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary"
+                autoFocus
               />
               <button
-                onClick={() => setIsEditingTitle(true)}
-                className="opacity-0 group-hover:opacity-100 p-1 text-muted-foreground hover:text-primary transition-all"
+                onClick={() => { setEditedTitle(title); setIsEditingTitle(false); }}
+                className="p-1 text-muted-foreground hover:text-foreground"
               >
-                <Pencil className="h-3.5 w-3.5" />
+                <X className="h-4 w-4" />
               </button>
               <button
-                onClick={() => onDeleteColumn(id)}
-                className="opacity-0 group-hover:opacity-100 p-1 text-muted-foreground hover:text-destructive transition-all"
+                onClick={handleSaveTitle}
+                className="p-1 text-primary hover:text-primary/80"
               >
-                <Trash2 className="h-3.5 w-3.5" />
+                <Check className="h-4 w-4" />
               </button>
             </div>
-          </>
+          ) : (
+            <>
+              <h2 className="font-semibold text-foreground">{title}</h2>
+              <div className="ml-auto flex items-center gap-1">
+                <span className="text-sm text-muted-foreground bg-background/80 px-2 py-0.5 rounded-full">
+                  {tasks.length}
+                </span>
+                <AdvancedColorPicker
+                  value={color}
+                  onChange={handleColorChange}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity"
+                />
+                <button
+                  onClick={() => setIsEditingTitle(true)}
+                  className="opacity-0 group-hover:opacity-100 p-1 text-muted-foreground hover:text-primary transition-all"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  onClick={() => onDeleteColumn(id)}
+                  className="opacity-0 group-hover:opacity-100 p-1 text-muted-foreground hover:text-destructive transition-all"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+
+        <SortableContext items={tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+          <div className="flex flex-col gap-3 flex-1">
+            {tasks.map((task) => (
+              <TaskCard key={task.id} task={task} onDelete={onDeleteTask} onUpdate={onUpdateTask} />
+            ))}
+          </div>
+        </SortableContext>
+
+        {isAdding ? (
+          <div className="mt-3 animate-scale-in">
+            <input
+              type="text"
+              value={newTaskTitle}
+              onChange={(e) => setNewTaskTitle(e.target.value)}
+              onKeyDown={handleKeyDown}
+              onBlur={() => {
+                if (!newTaskTitle.trim()) {
+                  setIsAdding(false);
+                }
+              }}
+              placeholder="Task title..."
+              className="w-full px-3 py-2 rounded-lg border border-input bg-card text-card-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              autoFocus
+            />
+            <div className="flex gap-2 mt-2">
+              <button
+                onClick={handleAddTask}
+                className="flex-1 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"
+              >
+                Add Task
+              </button>
+              <button
+                onClick={() => {
+                  setIsAdding(false);
+                  setNewTaskTitle('');
+                }}
+                className="px-4 py-2 bg-secondary text-secondary-foreground rounded-lg font-medium hover:bg-secondary/80 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            onClick={() => setIsAdding(true)}
+            className="add-task-btn"
+          >
+            <Plus className="h-4 w-4" />
+            Add task
+          </button>
         )}
       </div>
-
-      <SortableContext items={tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
-        <div className="flex flex-col gap-3 flex-1">
-          {tasks.map((task) => (
-            <TaskCard key={task.id} task={task} onDelete={onDeleteTask} onUpdate={onUpdateTask} />
-          ))}
-        </div>
-      </SortableContext>
-
-      {isAdding ? (
-        <div className="mt-3 animate-scale-in">
-          <input
-            type="text"
-            value={newTaskTitle}
-            onChange={(e) => setNewTaskTitle(e.target.value)}
-            onKeyDown={handleKeyDown}
-            onBlur={() => {
-              if (!newTaskTitle.trim()) {
-                setIsAdding(false);
-              }
-            }}
-            placeholder="Task title..."
-            className="w-full px-3 py-2 rounded-lg border border-input bg-card text-card-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-            autoFocus
-          />
-          <div className="flex gap-2 mt-2">
-            <button
-              onClick={handleAddTask}
-              className="flex-1 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"
-            >
-              Add Task
-            </button>
-            <button
-              onClick={() => {
-                setIsAdding(false);
-                setNewTaskTitle('');
-              }}
-              className="px-4 py-2 bg-secondary text-secondary-foreground rounded-lg font-medium hover:bg-secondary/80 transition-colors"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      ) : (
-        <button
-          onClick={() => setIsAdding(true)}
-          className="add-task-btn"
-        >
-          <Plus className="h-4 w-4" />
-          Add task
-        </button>
-      )}
     </div>
   );
 }

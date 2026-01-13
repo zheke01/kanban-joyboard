@@ -1,6 +1,7 @@
 export type ColumnId = string;
 
-export type ColumnColor = 'yellow' | 'blue' | 'green' | 'red' | 'purple' | 'orange' | 'pink' | 'cyan';
+// Now supports any hex color string
+export type ColumnColor = string;
 
 export interface Task {
   id: string;
@@ -17,13 +18,14 @@ export interface Column {
   color: ColumnColor;
 }
 
-export const COLUMN_COLORS: { value: ColumnColor; label: string; hsl: string }[] = [
-  { value: 'yellow', label: 'Yellow', hsl: '45 93% 47%' },
-  { value: 'blue', label: 'Blue', hsl: '221 83% 53%' },
-  { value: 'green', label: 'Green', hsl: '142 71% 45%' },
-  { value: 'red', label: 'Red', hsl: '0 84% 60%' },
-  { value: 'purple', label: 'Purple', hsl: '262 83% 58%' },
-  { value: 'orange', label: 'Orange', hsl: '25 95% 53%' },
-  { value: 'pink', label: 'Pink', hsl: '330 81% 60%' },
-  { value: 'cyan', label: 'Cyan', hsl: '189 94% 43%' },
+// Preset colors for quick selection
+export const PRESET_COLORS: { label: string; hex: string }[] = [
+  { label: 'Yellow', hex: '#EAB308' },
+  { label: 'Blue', hex: '#3B82F6' },
+  { label: 'Green', hex: '#22C55E' },
+  { label: 'Red', hex: '#EF4444' },
+  { label: 'Purple', hex: '#A855F7' },
+  { label: 'Orange', hex: '#F97316' },
+  { label: 'Pink', hex: '#EC4899' },
+  { label: 'Cyan', hex: '#06B6D4' },
 ];
